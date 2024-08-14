@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:expense_tracker/models/expense.dart';
 import 'package:flutter/material.dart';
 import 'package:isar/isar.dart';
@@ -53,5 +55,65 @@ class ExpenseDatabase extends ChangeNotifier {
 
     // read from db
     await readExpenses();
+  }
+
+  // calc total monthly expenses
+  Future<Map<int, double>> calculateMonthlyTotals() async {
+    await readExpenses();
+
+    Map<int, double> monthlyTotals = {};
+
+    for (var expense in _allExpenses) {
+      int month = expense.dateTime.month;
+
+      if (!monthlyTotals.containsKey(month)) {
+        monthlyTotals[month] = 0;
+      }
+
+      monthlyTotals[month] = monthlyTotals[month]! + expense.amount;
+    }
+
+    return monthlyTotals;
+  }
+
+  Future<double> calculateCurrenttMonthTotal() async {
+    await readExpenses();
+
+    int currentMonth = DateTime.now().month;
+    int currentYear = DateTime.now().year;
+
+    List<Expense> currentMonthExpenses = _allExpenses.where((expense) {
+      return expense.dateTime.month == currentMonth &&
+          expense.dateTime.year == currentYear;
+    }).toList();
+
+    double total =
+        currentMonthExpenses.fold(0, (sum, expense) => sum + expense.amount);
+
+    return total;
+  }
+
+  int getStartMonth() {
+    if (_allExpenses.isEmpty) {
+      return DateTime.now().month;
+    }
+
+    _allExpenses.sort(
+      (a, b) => a.dateTime.compareTo(b.dateTime),
+    );
+
+    return _allExpenses.first.dateTime.month;
+  }
+
+  int getStartYear() {
+    if (_allExpenses.isEmpty) {
+      return DateTime.now().year;
+    }
+
+    _allExpenses.sort(
+      (a, b) => a.dateTime.compareTo(b.dateTime),
+    );
+
+    return _allExpenses.first.dateTime.year;
   }
 }
